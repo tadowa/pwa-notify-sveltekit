@@ -3,6 +3,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { getAvailableUsersByTags } from '$lib/getAvailableUsers';
 	import { getAvailableUsersByDays } from '$lib/getAvailableUsersByDays';
+	import { goto } from '$app/navigation';
 
 	let notifications: { id: string; message: string; created_at: string }[] = [];
 	let newMessage = '';
@@ -98,6 +99,11 @@
 	});
 
 
+	function goToAbout() {
+		goto('/scheduler');
+	}
+
+
 </script>
 
 <h1>通知テストページ</h1>
@@ -137,3 +143,5 @@
 {:else}
   <p>空きユーザーは見つかりませんでした</p>
 {/if}
+
+<button on:click={goToAbout}>Aboutへ移動</button>
