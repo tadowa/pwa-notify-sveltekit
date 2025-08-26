@@ -3,8 +3,6 @@ import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
 import { CustomRenderer } from './CustomRenderer';
 
-const { Bounds } = Matter;
-
 export class MouseEventHandler {
   private mouse: Matter.Mouse;
   private boxes: Matter.Body[];
@@ -41,7 +39,7 @@ export class MouseEventHandler {
     this.mouse.element.addEventListener('mouseup', this.handleMouseUp);
   }
 
-  private handleMouseDown = (event: MouseEvent) => {
+  private handleMouseDown = () => {
     const pos = this.mouse.position;
     this.dragStart = { ...pos };
 

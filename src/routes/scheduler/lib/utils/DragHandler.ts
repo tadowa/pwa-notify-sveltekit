@@ -1,5 +1,5 @@
 import Matter from 'matter-js';
-const { Body, Bounds } = Matter;
+const { Body } = Matter;
 
 export class DragHandler {
   private dragOffsetMap = new Map<Matter.Body, Matter.Vector>();

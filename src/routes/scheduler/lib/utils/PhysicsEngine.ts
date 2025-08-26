@@ -108,7 +108,6 @@ export class PhysicsEngine {
   
   public destroy() {
     Render.stop(this.render);
-    Runner.stop(this.engine);
     Matter.Engine.clear(this.engine);
     this.mouse.element.removeEventListener('mousedown', this.mouseEventHandler['handleMouseDown']);
     this.mouse.element.removeEventListener('mousemove', this.mouseEventHandler['handleMouseMove']);

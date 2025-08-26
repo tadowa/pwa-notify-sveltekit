@@ -102,10 +102,6 @@
 	function goToAbout() {
 		goto('/scheduler');
 	}
-	function goToAbout2() {
-		goto('/scheduler2');
-	}
-
 
 </script>
 
@@ -148,4 +144,3 @@
 {/if}
 
 <button on:click={goToAbout}>Aboutへ移動</button>
-<button on:click={goToAbout2}>About2へ移動</button>

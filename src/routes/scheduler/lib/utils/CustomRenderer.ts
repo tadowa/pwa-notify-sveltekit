@@ -18,8 +18,8 @@ export class CustomRenderer {
 
   private draw() {
     const ctx = this.render.context;
-    const width = this.render.options.width;
-    const height = this.render.options.height;
+    const width = this.render.options.width || 0;
+    const height = this.render.options.height || 0;
 
     // グリッドの描画
     ctx.strokeStyle = '#eee';
