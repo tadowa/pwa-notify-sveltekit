@@ -147,7 +147,8 @@ export function expandSelected() {
           restitution: 0,
           inertia: Infinity,
           render: { fillStyle: '#3498db' },
-          label: String(task.id)
+          label: String(task.id),
+          plugin: { groupId: task.groupId },
         });
         boxes.push(box);
         Composite.add(engine.world, box);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MatterCanvas from './MatterCanvas.svelte';
+  import MatterCanvas from './components/MatterCanvas.svelte';
   import Controls from './components/Controls.svelte';
 
   let canvasRef: any;
@@ -13,5 +13,8 @@
 />
 
 <style>
-:global(body) { margin: 0; }
+  :global(body) {
+    margin: 0;
+    font-family: sans-serif;
+  }
 </style>
