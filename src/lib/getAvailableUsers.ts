@@ -32,10 +32,10 @@ const startISO = new Date('2025-08-20T11:15:00Z').toISOString();
 const endISO   = new Date('2025-08-20T12:45:00Z').toISOString();
 
 const { data, error } = await supabase.rpc('get_available_users_by_time_and_tags', {
-  _start_interval: startISO,
-  _end_interval: endISO,
-  _tag_names: ['土日OK', '第三土曜OK'],  // タグ無しの場合は null
-  _min_hours: 1
+  start_interval: startISO,
+  end_interval: endISO,
+  tag_names: ['土日OK', '第三土曜OK'],  // タグ無しの場合は null
+  min_hours: 1
 });
 
 console.log({ data, error });  
@@ -55,6 +55,7 @@ console.log({ data, error });
       tag_names: tags,  // JS配列そのまま渡す
       min_hours: minHours,
     });
+    
  
     if (error) {
       console.error('RPC error:', error);

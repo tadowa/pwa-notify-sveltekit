@@ -5,6 +5,7 @@
   onMount(async () => {
     const res = await fetch('/api/projects');
     projects = await res.json();
+    console.log('projects:', projects); // ここで確認
   });
 </script>
 
@@ -13,7 +14,7 @@
   {#each projects as project}
     <li class="p-2 border rounded">
       <a href={`/projects/${project.id}`} class="text-blue-600 hover:underline">
-        {project.name}
+        {project.title}
       </a>
       <p class="text-sm text-gray-600">{project.description}</p>
     </li>

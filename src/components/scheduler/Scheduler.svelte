@@ -1,12 +1,13 @@
-<!-- src\routes\scheduler\+page.svelte -->
 <script lang="ts">
-  import MatterCanvas from './components/MatterCanvas.svelte';
-  import Controls from './components/Controls.svelte';
+  import MatterCanvas from './MatterCanvas.svelte';
+  import Controls from './Controls.svelte';
+  import { tasks, type Task } from './stores';
 
   let canvasRef: any;
 </script>
 
-<MatterCanvas bind:this={canvasRef} />
+<!-- store 自体を props として渡す -->
+<MatterCanvas bind:this={canvasRef} {tasks} />
 
 <Controls
   collapseSelected={() => canvasRef?.collapseSelected()}

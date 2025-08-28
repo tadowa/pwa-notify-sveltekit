@@ -1,12 +1,13 @@
-<!-- src\routes\scheduler\components\MatterCanvas.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  // エイリアスではなく、相対パスを使用する
-  import { PhysicsEngine } from '../lib/utils/PhysicsEngine';
-  import { tasks } from '../stores';
+  import { PhysicsEngine } from './lib/utils/PhysicsEngine';
+  import { tasks, type Task } from './stores';
+
+  // export let tasks: Task[] = [];
 
   let canvasEl: HTMLCanvasElement;
   let physicsEngine: PhysicsEngine;
+
   const gridSize = 80;
   const width = 1400;
   const height = 900;
@@ -21,15 +22,14 @@
 
   onMount(() => {
     physicsEngine = new PhysicsEngine(canvasEl, width, height, gridSize);
-
+    // physicsEngine.createBoxes(tasks);
     const unsubscribe = tasks.subscribe(taskList => {
       if (taskList) {
-        physicsEngine.createBoxes(taskList);
+        physicsEngine.createBoxes(taskList); // taskList は配列
       }
     });
 
     onDestroy(() => {
-      unsubscribe();
       physicsEngine.destroy();
     });
   });

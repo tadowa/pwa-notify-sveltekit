@@ -18,7 +18,13 @@ export const GET: RequestHandler = async ({ params }) => {
     .select('*')
     .eq('project_id', params.id);
 
-  return new Response(JSON.stringify({ project, nodes, edges }), {
+  // tasks を node_id ごとに取得
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .in('node_id', nodes?.map(n => n.id) || []);
+
+  return new Response(JSON.stringify({ project, nodes, edges, tasks }), {
     headers: { 'Content-Type': 'application/json' }
   });
 };

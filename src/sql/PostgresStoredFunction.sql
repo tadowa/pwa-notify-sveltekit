@@ -1,6 +1,30 @@
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+SELECT
+    proname,
+    proargtypes,
+    prorettype,
+    oid::regprocedure AS signature
+FROM pg_proc
+WHERE proname = 'get_available_users_by_time_and_tags';
+
+[
+  {
+    "proname": "get_available_users_by_time_and_tags",
+    "proargtypes": "1184 1184 1009 23",
+    "prorettype": 2249,
+    "signature": "get_available_users_by_time_and_tags(timestamp with time zone,timestamp with time zone,text[],integer)"
+  }
+]
+
 -- 既存関数があれば削除
 DROP FUNCTION IF EXISTS get_available_users_by_time_and_tags(timestamptz, timestamptz, text[]);
+-- 既存関数を削除
+DROP FUNCTION IF EXISTS get_available_users_by_time_and_tags(
+    timestamptz,
+    timestamptz,
+    text[],
+    int
+);
 
 CREATE OR REPLACE FUNCTION get_available_users_by_time_and_tags(
     start_interval timestamptz,
@@ -114,9 +138,15 @@ SELECT * FROM get_available_users_by_time_and_tags(
 
 
 
-
-
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+DROP FUNCTION IF EXISTS get_available_users_by_time_and_tags_with_days(
+    timestamptz,
+    timestamptz,
+    text[],
+    int
+);
+
+
 CREATE OR REPLACE FUNCTION get_available_users_by_time_and_tags_with_days(
     start_date timestamptz,
     end_date timestamptz,

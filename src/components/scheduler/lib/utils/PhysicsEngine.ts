@@ -58,7 +58,7 @@ export class PhysicsEngine {
     const gridSize = 80;
     this.boxes = tasks.map(task => {
       const x = task.start * gridSize + (task.duration * gridSize) / 2;
-      const y = task.id * gridSize + gridSize / 2;
+      const y = task.groupId * gridSize + gridSize / 2;
       return Bodies.rectangle(x, y, task.duration * gridSize, gridSize, {
         frictionAir: 0.2,
         restitution: 0,
