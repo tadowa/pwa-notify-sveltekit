@@ -99,9 +99,6 @@
 	});
 
 
-	function goToAbout() {
-		goto('/scheduler');
-	}
 	function goToProjects() {
 		goto('/projects');
 	}
@@ -145,5 +142,4 @@
   <p>空きユーザーは見つかりませんでした</p>
 {/if}
 
-<button on:click={goToAbout}>Aboutへ移動</button>
 <button on:click={goToProjects}>Projectsへ移動</button>
