@@ -1,4 +1,4 @@
-// src\routes\scheduler\lib\utils\PhysicsEngine.ts
+// src/routes/scheduler/lib/utils/PhysicsEngine.ts
 import Matter from 'matter-js';
 import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
@@ -6,7 +6,7 @@ import { CustomRenderer } from './CustomRenderer';
 import { MouseEventHandler } from './MouseEventHandler';
 import { GroupManager } from './GroupManager';
 
-const { Engine, Render, Runner, Bodies, Composite, Mouse } = Matter;
+const { Engine, Render, Runner, Bodies, Composite, Mouse, Events } = Matter;
 
 export class PhysicsEngine {
   private engine: Matter.Engine;
@@ -40,7 +40,6 @@ export class PhysicsEngine {
     this.customRenderer = new CustomRenderer(this.render, gridSize);
     this.groupManager = new GroupManager();
 
-    // MouseEventHandlerに状態更新のコールバックを渡す
     this.mouseEventHandler = new MouseEventHandler(
       this.mouse,
       this.boxes,
@@ -49,30 +48,39 @@ export class PhysicsEngine {
       this.customRenderer,
       this.handleSelectionChange
     );
+
+    // --- ボックス上に文字を描画 ---
+    Events.on(this.render, 'afterRender', () => {
+      const ctx = this.render.context;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (const box of this.boxes) {
+        if (box.plugin?.labelText) {
+          ctx.fillStyle = this.selectedBodies.includes(box) ? '#2ecc71' : 'black';
+          ctx.fillText(box.plugin.labelText, box.position.x, box.position.y);
+        }
+      }
+    });
   }
 
-// src/routes/scheduler/lib/PhysicsEngine.ts
-
-  public createBoxes(tasks: { id: number; start: number; duration: number; groupId?: number }[]) {
+  public createBoxes(tasks: { id: string; title: string; x: number; y: number; w: number; h: number; group_id?: number }[]) {
     Composite.clear(this.engine.world, false, true);
-    const gridSize = 80;
     this.boxes = tasks.map(task => {
-      const x = task.start * gridSize + (task.duration * gridSize) / 2;
-      const y = task.groupId * gridSize + gridSize / 2;
-      return Bodies.rectangle(x, y, task.duration * gridSize, gridSize, {
+      return Bodies.rectangle(task.x, task.y, task.w, task.h, {
         frictionAir: 0.2,
         restitution: 0,
         inertia: Infinity,
         render: { fillStyle: '#3498db' },
-        label: String(task.id),
-        plugin: { groupId: task.groupId },
+        label: String(task.title),
+        plugin: { group_id: task.group_id, labelText: task.title },
       });
     });
     Composite.add(this.engine.world, this.boxes);
-    // 新しいボックスリストをハンドラに通知
+
     this.mouseEventHandler.updateBoxList(this.boxes);
-    // SelectionHandlerにも新しいボックスリストを更新するメソッドを追加
-    this.selectionHandler.updateAllBodies(this.boxes); // ← この行を追加
+    this.selectionHandler.updateAllBodies(this.boxes);
     this.handleSelectionChange(this.selectedBodies);
   }
 
@@ -88,7 +96,6 @@ export class PhysicsEngine {
 
   private handleSelectionChange = (selectedBodies: Matter.Body[]) => {
     this.selectedBodies = selectedBodies;
-    // MouseEventHandlerにも選択状態を同期させる
     this.mouseEventHandler.updateSelectedBodies(selectedBodies);
     this.updateBoxColors();
   };
@@ -106,7 +113,7 @@ export class PhysicsEngine {
       }
     }
   }
-  
+
   public destroy() {
     Render.stop(this.render);
     Matter.Engine.clear(this.engine);

@@ -3,35 +3,34 @@ import { writable } from 'svelte/store';
 
 export type Task = {
   id: string;
-  title: string;
-  start: number;
-  duration: number;
-  groupId: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  group_id: number;
 
   node_id?: string;
+  title: string;
   description?: string;
   estimated_hours?: number;
-  created_at?: string;
-  updated_at?: string;
 };
 
 export const tasks = writable<Task[]>([]);
 
 // DB から取得した tasks を store にセット
-export function setTasksFromDB(dbTasks: any[], baseHours: number) {
+export function setTasksFromDB(srcTasks: Task[]) {
   tasks.set(
-    dbTasks.map((t, i) => ({
+    srcTasks.map((t, i) => ({
       id: t.id,
-      title: t.title,
-      start: i,
-      // duration: t.estimated_hours * (baseHours || 1),
-      duration: t.estimated_hours * 100,
-      groupId: i + 1,
+      x: t.x,
+      y: t.y,
+      w: t.w,
+      h: t.h,
+      group_id: t.group_id,
       node_id: t.node_id,
+      title: t.title,
       description: t.description,
       estimated_hours: t.estimated_hours,
-      created_at: t.created_at,
-      updated_at: t.updated_at
     }))
   );
 }

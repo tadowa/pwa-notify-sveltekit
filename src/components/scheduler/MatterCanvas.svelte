@@ -8,7 +8,7 @@
   let canvasEl: HTMLCanvasElement;
   let physicsEngine: PhysicsEngine;
 
-  const gridSize = 80;
+  const gridSize = 16 * 4;
   const width = 1400;
   const height = 900;
 
@@ -22,7 +22,6 @@
 
   onMount(() => {
     physicsEngine = new PhysicsEngine(canvasEl, width, height, gridSize);
-    // physicsEngine.createBoxes(tasks);
     const unsubscribe = tasks.subscribe(taskList => {
       if (taskList) {
         physicsEngine.createBoxes(taskList); // taskList は配列

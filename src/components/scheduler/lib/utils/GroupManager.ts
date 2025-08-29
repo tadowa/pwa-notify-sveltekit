@@ -5,7 +5,7 @@ import Matter from 'matter-js';
 interface CollapsedGroup {
   master: Matter.Body;
   children: Matter.Body[];
-  groupId: number;
+  group_id: number;
   prePositions: { body: Matter.Body; x: number; y: number }[];
 }
 
@@ -23,13 +23,13 @@ export class GroupManager {
       return (curY < minY || (curY === minY && curX < minX)) ? b : min;
     }, selectedBodies[0]);
 
-    const groupId = Date.now();
+    const group_id = Date.now();
     const prePositions = selectedBodies.map(body => ({ body, x: body.position.x, y: body.position.y }));
 
-    this.collapsedGroups.set(groupId, {
+    this.collapsedGroups.set(group_id, {
       master,
       children: selectedBodies.filter(b => b !== master),
-      groupId,
+      group_id,
       prePositions,
     });
 
@@ -38,7 +38,7 @@ export class GroupManager {
       Matter.Body.setPosition(body, { x: body.position.x, y: masterY });
       Matter.Body.setVelocity(body, { x: 0, y: 0 });
       Matter.Body.setAngularVelocity(body, 0);
-      body.collisionFilter.group = -groupId;
+      body.collisionFilter.group = -group_id;
       (body as any).isCollapsed = true;
       if (body === master) (body as any).isGroupMaster = true;
     });
@@ -74,7 +74,7 @@ export class GroupManager {
       (targetBody as any).isGroupMaster = false;
     });
     
-    this.collapsedGroups.delete(groupToExpand.groupId);
+    this.collapsedGroups.delete(groupToExpand.group_id);
   }
 
   public getCollapsedGroups() {

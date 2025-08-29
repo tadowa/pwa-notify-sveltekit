@@ -4,6 +4,8 @@
   import Scheduler from '../../../components/scheduler/Scheduler.svelte';
   import type { Task } from '../../../components/scheduler/stores';
   import { tasks, setTasksFromDB } from '../../../components/scheduler/stores';
+  import { buildNodeIdGrid, convertGridIdToTitle, convert2DGridToMatterTasks } from '../../../components/scheduler/lib/utils/taskConverter';
+  // import { parseGraphTo2DArray } from '../../../components/scheduler/lib/utils/nodeLayout';
 
   export let params;
   let project: any = null;
@@ -18,8 +20,21 @@
     nodes = data.nodes;
     edges = data.edges;
 
+    // const parsedArray = parseGraphTo2DArray(nodes, edges);
+    // console.log(JSON.stringify(parsedArray, null, 2));
+
+    // 1. 2次元配列を作る
+    const grid = buildNodeIdGrid(nodes, edges);
+    console.log(grid);
+    const titleGrid = convertGridIdToTitle(grid, nodes);
+    console.log(titleGrid);
+
+    // 2. それを使って MatterTask に変換
+    const matterTasks = convert2DGridToMatterTasks(grid, data.tasks);
+    console.log(matterTasks);
+
     // tasks を store にセット
-    setTasksFromDB(data.tasks || [], project?.base_estimated_hours || 1);
+    setTasksFromDB(matterTasks || []);
 
     // グラフ構築
     graph = new Graph({ directed: true });
@@ -37,14 +52,14 @@
   <h2 class="text-lg font-semibold">Nodes</h2>
   <ul class="mb-4 list-disc ml-5">
     {#each nodes as node}
-      <li>{node.title}</li>
+      <li>id : {node.id} title : {node.title}</li>
     {/each}
   </ul>
 
   <h2 class="text-lg font-semibold">Edges</h2>
   <ul class="list-disc ml-5">
     {#each edges as edge}
-      <li>{edge.source_node_id} → {edge.target_node_id}</li>
+      <li>source_node_id : {edge.source_node_id} → target_node_id : {edge.target_node_id}</li>
     {/each}
   </ul>
 {/if}
@@ -54,8 +69,7 @@
   <ul class="mb-4 list-disc ml-5">
     {#each $tasks as task}
       <li>
-        {task.title} — 開始: {task.start}, 期間: {task.duration.toFixed(2)}, 
-        推定時間: {task.estimated_hours}h
+        {task.node_id} {task.title} {task.estimated_hours},
       </li>
     {/each}
   </ul>
