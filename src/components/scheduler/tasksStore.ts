@@ -1,4 +1,4 @@
-// src/components/scheduler/stores.ts
+// src\components\scheduler\tasksStore.ts
 import { writable } from 'svelte/store';
 
 export type Task = {

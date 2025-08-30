@@ -57,8 +57,8 @@
 
 	// リアルタイム購読
     function subscribeNotifications() {
-    console.log('subscribeNotifications 呼び出し');
-    const channel = supabase
+    	console.log('subscribeNotifications 呼び出し');
+    	const channel = supabase
         .channel('public:notifications')
         .on(
         'postgres_changes',
@@ -69,7 +69,7 @@
         }
         );
 
-    channel.subscribe();
+		channel.subscribe();
     }
 
 

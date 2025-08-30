@@ -12,7 +12,7 @@
 <style>
 .controls {
   position: absolute;
-  top: 8px;
+  bottom: 8px; /* 上ではなく下に配置 */
   left: 8px;
   display: flex;
   gap: 8px;

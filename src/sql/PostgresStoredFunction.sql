@@ -281,3 +281,108 @@ users 配列には、指定期間内で指定条件を満たすユーザーが�
 
 free_start / free_end / free_hours なども返すよう関数を設計している場合、それらを表示できます。
 
+
+
+ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+-- 既存の関数を削除
+DROP FUNCTION IF EXISTS get_available_users_busy_slots(
+    start_date timestamptz,
+    end_date timestamptz,
+    tag_names text[],
+    min_hours numeric,
+    min_days integer
+);
+
+-- 新しい関数を作成
+CREATE OR REPLACE FUNCTION get_available_users_busy_slots(
+    start_date timestamptz,
+    end_date timestamptz,
+    tag_names text[],
+    min_hours numeric,
+    min_days integer
+)
+RETURNS TABLE (
+    user_id uuid,
+    name text,
+    busy jsonb
+)
+LANGUAGE sql
+AS $$
+WITH user_list AS (
+    SELECT p.id, p.name
+    FROM profiles p
+    WHERE tag_names IS NULL
+       OR EXISTS (
+           SELECT 1
+           FROM user_tags ut
+           JOIN tags t ON ut.tag_id = t.id
+           WHERE ut.user_id = p.id
+             AND t.name = ANY(tag_names)
+       )
+),
+dates AS (
+    SELECT generate_series(start_date::date, end_date::date, interval '1 day') AS dt
+),
+busy_slots AS (
+    SELECT
+        u.id AS user_id,
+        u.name,
+        GREATEST(s.start_time, d.dt) AS busy_start,
+        LEAST(s.end_time, d.dt + interval '1 day') AS busy_end
+    FROM user_list u
+    CROSS JOIN dates d
+    JOIN schedules s
+      ON s.user_id = u.id
+     AND s.start_time < d.dt + interval '1 day'
+     AND s.end_time > d.dt
+),
+daily_free AS (
+    SELECT
+        u.id AS user_id,
+        d.dt::date AS day,
+        SUM(EXTRACT(EPOCH FROM (bs.busy_end - bs.busy_start))/3600) AS busy_hours
+    FROM user_list u
+    CROSS JOIN dates d
+    LEFT JOIN busy_slots bs
+      ON bs.user_id = u.id
+    GROUP BY u.id, d.dt
+),
+user_free_days AS (
+    SELECT
+        user_id,
+        COUNT(*) FILTER (
+          WHERE 24 - COALESCE(busy_hours,0) >= min_hours
+        ) AS free_days
+    FROM daily_free
+    GROUP BY user_id
+),
+busy_json AS (
+    SELECT
+        user_id,
+        name,
+        jsonb_agg(jsonb_build_object(
+            'start', busy_start,
+            'end', busy_end
+        ) ORDER BY busy_start) AS busy
+    FROM busy_slots
+    GROUP BY user_id, name
+)
+SELECT bj.user_id, bj.name, bj.busy
+FROM busy_json bj
+JOIN user_free_days uf ON uf.user_id = bj.user_id
+WHERE uf.free_days >= min_days
+ORDER BY bj.name;
+$$;
+
+
+ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+SELECT *
+FROM get_available_users_busy_slots(
+    '2025-08-18 00:00'::timestamptz,
+    '2025-08-22 23:59'::timestamptz,
+    ARRAY['土日OK', '第三土曜OK'],
+    2,  -- min_hours
+    3   -- min_days
+);
+
+ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー

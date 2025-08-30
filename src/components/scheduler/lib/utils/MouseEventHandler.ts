@@ -1,8 +1,13 @@
-// src\routes\scheduler\lib\utils\MouseEventHandler.ts
+// src/routes/scheduler/lib/utils/MouseEventHandler.ts
 import Matter from 'matter-js';
 import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
-import { CustomRenderer } from './CustomRenderer';
+
+export type MouseHandlers = {
+  onSelectionChange?: (selectedBodies: Matter.Body[]) => void;
+  onScroll?: (dx: number, dy: number) => void;
+  onZoom?: (factor: number, center?: { x: number; y: number }) => void;
+};
 
 export class MouseEventHandler {
   private mouse: Matter.Mouse;
@@ -13,23 +18,20 @@ export class MouseEventHandler {
 
   private dragHandler: DragHandler;
   private selectionHandler: SelectionHandler;
-  private customRenderer: CustomRenderer;
-  private onSelectionChange: (selectedBodies: Matter.Body[]) => void;
+  private handlers: MouseHandlers;
 
   constructor(
     mouse: Matter.Mouse,
     boxes: Matter.Body[],
     dragHandler: DragHandler,
     selectionHandler: SelectionHandler,
-    customRenderer: CustomRenderer,
-    onSelectionChange: (selectedBodies: Matter.Body[]) => void
+    handlers: MouseHandlers
   ) {
     this.mouse = mouse;
     this.boxes = boxes;
     this.dragHandler = dragHandler;
     this.selectionHandler = selectionHandler;
-    this.customRenderer = customRenderer;
-    this.onSelectionChange = onSelectionChange;
+    this.handlers = handlers;
 
     this.setupEvents();
   }
@@ -38,57 +40,64 @@ export class MouseEventHandler {
     this.mouse.element.addEventListener('mousedown', this.handleMouseDown);
     this.mouse.element.addEventListener('mousemove', this.handleMouseMove);
     this.mouse.element.addEventListener('mouseup', this.handleMouseUp);
+
+    // ホイール操作
+    this.mouse.element.addEventListener('wheel', this.handleWheel, { passive: false });
   }
 
   private handleMouseDown = () => {
     const pos = this.mouse.position;
     this.dragStart = { ...pos };
 
-    // クリックされたオブジェクトを特定
     const clickedBody = this.boxes.find(b => Matter.Bounds.contains(b.bounds, pos));
 
     if (clickedBody) {
-        // クリックされた要素がすでに選択範囲に含まれているかチェック
-        if (this.selectedBodies.includes(clickedBody)) {
-        // 含まれている場合は、選択状態を維持してドラッグを開始
+      if (this.selectedBodies.includes(clickedBody)) {
         this.isDragging = true;
         this.dragHandler.startDrag(this.selectedBodies, pos);
-        } else {
-        // 含まれていない場合は、その要素を単体で選択し、ドラッグを開始
-        this.onSelectionChange([clickedBody]);
+      } else {
+        this.selectedBodies = [clickedBody];
+        this.handlers.onSelectionChange?.(this.selectedBodies);
         this.isDragging = true;
         this.dragHandler.startDrag(this.selectedBodies, pos);
-        }
+      }
     } else {
-        // オブジェクトがクリックされなかった場合は、選択を解除し、範囲選択を開始
-        this.onSelectionChange([]);
-        this.isDragging = false;
+      this.selectedBodies = [];
+      this.handlers.onSelectionChange?.(this.selectedBodies);
+      this.isDragging = false;
     }
   };
 
-
-
   private handleMouseMove = () => {
     const pos = this.mouse.position;
-
     if (!this.dragStart) return;
 
     if (this.isDragging) {
-      // ドラッグ操作中
       this.dragHandler.applyDragPosition(this.selectedBodies, pos);
     } else {
-      // 範囲選択中
       const rect = this.selectionHandler.getSelectionBounds(this.dragStart, pos);
       const selected = this.selectionHandler.updateSelectedBodies(rect);
-      this.customRenderer.setSelectionRect(rect);
-      this.onSelectionChange(selected);
+      this.handlers.onSelectionChange?.(selected);
     }
   };
 
   private handleMouseUp = () => {
     this.isDragging = false;
     this.dragStart = null;
-    this.customRenderer.setSelectionRect(null);
+  };
+
+  private handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+
+    const deltaX = e.deltaX;
+    const deltaY = e.deltaY;
+
+    if (e.shiftKey) {
+      const factor = deltaY < 0 ? 1.1 : 0.9;
+      this.handlers.onZoom?.(factor, { x: e.offsetX, y: e.offsetY });
+    } else {
+      this.handlers.onScroll?.(-deltaX, -deltaY);
+    }
   };
 
   public updateBoxList(boxes: Matter.Body[]) {
@@ -98,5 +107,12 @@ export class MouseEventHandler {
 
   public updateSelectedBodies(selectedBodies: Matter.Body[]) {
     this.selectedBodies = selectedBodies;
+  }
+
+  public destroy() {
+    this.mouse.element.removeEventListener('mousedown', this.handleMouseDown);
+    this.mouse.element.removeEventListener('mousemove', this.handleMouseMove);
+    this.mouse.element.removeEventListener('mouseup', this.handleMouseUp);
+    this.mouse.element.removeEventListener('wheel', this.handleWheel);
   }
 }

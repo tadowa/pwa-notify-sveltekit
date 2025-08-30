@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { PhysicsEngine } from './lib/utils/PhysicsEngine';
-  import { tasks, type Task } from './stores';
+  import { tasks, type Task } from './tasksStore';
+  import { schedules, type Schedule } from './schedulesStore';
 
   // export let tasks: Task[] = [];
 
@@ -22,9 +23,14 @@
 
   onMount(() => {
     physicsEngine = new PhysicsEngine(canvasEl, width, height, gridSize);
-    const unsubscribe = tasks.subscribe(taskList => {
+    const unsubscribe_tasks = tasks.subscribe(taskList => {
       if (taskList) {
         physicsEngine.createBoxes(taskList); // taskList は配列
+      }
+    });
+    const unsubscribe_schedule = schedules.subscribe(scheduleList => {
+      if (scheduleList) {
+        physicsEngine.createBoxes(scheduleList); // taskList は配列
       }
     });
 
@@ -32,6 +38,7 @@
       physicsEngine.destroy();
     });
   });
+
 </script>
 
 <canvas bind:this={canvasEl}></canvas>
