@@ -1,3 +1,4 @@
+<!-- src\routes\projects\[id]\+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Graph } from '@dagrejs/graphlib';

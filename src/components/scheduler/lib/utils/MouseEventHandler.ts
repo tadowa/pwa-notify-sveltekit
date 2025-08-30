@@ -1,4 +1,4 @@
-// src/routes/scheduler/lib/utils/MouseEventHandler.ts
+// src\components\scheduler\lib\utils\MouseEventHandler.ts
 import Matter from 'matter-js';
 import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
@@ -47,26 +47,33 @@ export class MouseEventHandler {
     this.mouse.element.addEventListener('mousedown', this.handleMouseDown);
     this.mouse.element.addEventListener('mousemove', this.handleMouseMove);
     this.mouse.element.addEventListener('mouseup', this.handleMouseUp);
-
-    // ホイール操作
     this.mouse.element.addEventListener('wheel', this.handleWheel, { passive: false });
   }
 
-  private handleMouseDown = () => {
-    const pos = this.mouse.position;
-    this.dragStart = { ...pos };
+  // Canvas座標 → ワールド座標に変換
+  private getWorldPosition(pos: Matter.Vector, bounds: Matter.Bounds) {
+    return {
+      x: pos.x + bounds.min.x,
+      y: pos.y + bounds.min.y
+    };
+  }
 
-    const clickedBody = this.boxes.find(b => Matter.Bounds.contains(b.bounds, pos));
+  private handleMouseDown = (event: MouseEvent) => {
+    const bounds = (this.mouse as any).renderBounds as Matter.Bounds; 
+    const worldPos = this.getWorldPosition(this.mouse.position, bounds);
+
+    this.dragStart = { ...worldPos };
+    const clickedBody = this.boxes.find(b => Matter.Bounds.contains(b.bounds, worldPos));
 
     if (clickedBody) {
       if (this.selectedBodies.includes(clickedBody)) {
         this.isDragging = true;
-        this.dragHandler.startDrag(this.selectedBodies, pos);
+        this.dragHandler.startDrag(this.selectedBodies, worldPos);
       } else {
         this.selectedBodies = [clickedBody];
         this.handlers.onSelectionChange?.(this.selectedBodies);
         this.isDragging = true;
-        this.dragHandler.startDrag(this.selectedBodies, pos);
+        this.dragHandler.startDrag(this.selectedBodies, worldPos);
       }
     } else {
       // オブジェクトがクリックされなかった場合は、選択を解除し、範囲選択を開始
@@ -77,14 +84,16 @@ export class MouseEventHandler {
     }
   };
 
-  private handleMouseMove = () => {
-    const pos = this.mouse.position;
+  private handleMouseMove = (event: MouseEvent) => {
     if (!this.dragStart) return;
 
+    const bounds = (this.mouse as any).renderBounds as Matter.Bounds;
+    const worldPos = this.getWorldPosition(this.mouse.position, bounds);
+
     if (this.isDragging) {
-      this.dragHandler.applyDragPosition(this.selectedBodies, pos);
+      this.dragHandler.applyDragPosition(this.selectedBodies, worldPos);
     } else {
-      const rect = this.selectionHandler.getSelectionBounds(this.dragStart, pos);
+      const rect = this.selectionHandler.getSelectionBounds(this.dragStart, worldPos);
       const selected = this.selectionHandler.updateSelectedBodies(rect);
       this.customRenderer.setSelectionRect(rect);
       this.onSelectionChange(selected);
@@ -100,7 +109,6 @@ export class MouseEventHandler {
 
   private handleWheel = (e: WheelEvent) => {
     e.preventDefault();
-
     const deltaX = e.deltaX;
     const deltaY = e.deltaY;
 

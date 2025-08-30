@@ -1,11 +1,10 @@
-// src/routes/scheduler/lib/utils/PhysicsEngine.ts
 import Matter from 'matter-js';
 import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
 import { CustomRenderer } from './CustomRenderer';
-import { MouseEventHandler } from './MouseEventHandler';
-import type { MouseHandlers } from './MouseEventHandler';
+import { MouseEventHandler, type MouseHandlers } from './MouseEventHandler';
 import { GroupManager } from './GroupManager';
+import { TaskLabelRenderer, type TaskLabel } from './TaskLabelRenderer';
 
 const { Engine, Render, Runner, Bodies, Composite, Mouse, Events } = Matter;
 
@@ -21,27 +20,39 @@ export class PhysicsEngine {
   private customRenderer: CustomRenderer;
   private mouseEventHandler: MouseEventHandler;
   private groupManager: GroupManager;
+  private taskLabelRenderer: TaskLabelRenderer;
 
-  private scale: number = 1; // ズーム倍率
+  private canvasWidth = 0;
+  private canvasHeight = 0;
 
-  constructor(canvas: HTMLCanvasElement, width: number, height: number, gridSize: number) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private labelContainer: HTMLElement,
+    private gridSize: number
+  ) {
+    if (!canvas || !labelContainer) {
+      throw new Error('Canvas or labelContainer not provided to PhysicsEngine');
+    }
+
     this.engine = Engine.create();
     this.engine.gravity.y = 0;
 
     this.render = Render.create({
-      canvas,
+      canvas: this.canvas,
       engine: this.engine,
-      options: { width, height, wireframes: false, background: '#fafafa' }
+      options: { wireframes: false, background: '#fafafa' }
     });
     Render.run(this.render);
     Runner.run(Runner.create(), this.engine);
 
-    this.mouse = Mouse.create(canvas);
+    this.mouse = Mouse.create(this.canvas);
+    (this.mouse as any).renderBounds = this.render.bounds;
 
     this.dragHandler = new DragHandler();
     this.selectionHandler = new SelectionHandler(this.boxes);
-    this.customRenderer = new CustomRenderer(this.render, gridSize);
+    this.customRenderer = new CustomRenderer(this.render, this.gridSize);
     this.groupManager = new GroupManager();
+    this.taskLabelRenderer = new TaskLabelRenderer(this.labelContainer);
 
     const handlers: MouseHandlers = {
       onSelectionChange: this.handleSelectionChange,
@@ -59,21 +70,49 @@ export class PhysicsEngine {
       handlers
     );
 
-    // --- ボックス上に文字を描画 ---
+    // ラベル更新
     Events.on(this.render, 'afterRender', () => {
-      const ctx = this.render.context;
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      const taskLabels: TaskLabel[] = this.boxes.map(box => ({
+        id: box.id.toString(),
+        text: box.plugin?.labelText ?? '',
+        x: box.position.x,
+        y: box.position.y
+      }));
 
-      for (const box of this.boxes) {
-        if (box.plugin?.labelText) {
-          ctx.fillStyle = this.selectedBodies.includes(box) ? '#2ecc71' : 'black';
-          ctx.fillText(box.plugin.labelText, box.position.x, box.position.y);
-        }
-      }
+      this.taskLabelRenderer.setRenderBounds(this.render.bounds, this.canvasWidth, this.canvasHeight);
+      this.taskLabelRenderer.update(taskLabels);
     });
+
+    // 初期サイズ
+    this.resizeCanvas();
+
+    // ウィンドウリサイズ対応
+    window.addEventListener('resize', this.resizeCanvas);
   }
+
+  private resizeCanvas = () => {
+    if (!this.canvas) return;
+
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+
+    this.canvasWidth = width;
+    this.canvasHeight = height;
+
+    this.canvas.width = width;
+    this.canvas.height = height;
+
+    this.render.options.width = width;
+    this.render.options.height = height;
+
+    Render.lookAt(this.render, {
+      min: { x: 0, y: 0 },
+      max: { x: width, y: height }
+    });
+
+    // ラベルにサイズ更新を通知
+    this.taskLabelRenderer.setRenderBounds(this.render.bounds, this.canvasWidth, this.canvasHeight);
+  };
 
   public createBoxes(tasks: { id: string; title: string; x: number; y: number; w: number; h: number; group_id?: number }[]) {
     const newBoxes = tasks.map(task => Bodies.rectangle(task.x, task.y, task.w, task.h, {
@@ -87,7 +126,7 @@ export class PhysicsEngine {
         group: task.group_id ?? 0,
         category: 0x0001,
         mask: 0xFFFFFFFF
-      },
+      }
     }));
 
     this.boxes = [...this.boxes, ...newBoxes];
@@ -112,8 +151,6 @@ export class PhysicsEngine {
     this.selectedBodies = selectedBodies;
     this.mouseEventHandler.updateSelectedBodies(selectedBodies);
     this.updateBoxColors();
-    // CustomRenderer の選択矩形は PhysicsEngine 側で反映する場合もある
-    // ここでは MouseEventHandler が描画通知を持つなら不要
   };
 
   private updateBoxColors() {
@@ -134,12 +171,13 @@ export class PhysicsEngine {
   }
 
   public scroll(dx: number, dy: number) {
-    Matter.Bounds.translate(this.render.bounds, { x: dx, y: dy });
-    Matter.Render.lookAt(this.render, this.render.bounds);
+    const bounds = this.render.bounds;
+    const min = { x: bounds.min.x + dx, y: bounds.min.y + dy };
+    const max = { x: bounds.max.x + dx, y: bounds.max.y + dy };
+    Matter.Render.lookAt(this.render, { min, max });
   }
 
   public zoom(factor: number, center?: { x: number; y: number }) {
-    this.scale *= factor;
     const bounds = this.render.bounds;
     const cx = center?.x ?? (bounds.min.x + bounds.max.x) / 2;
     const cy = center?.y ?? (bounds.min.y + bounds.max.y) / 2;
@@ -161,5 +199,6 @@ export class PhysicsEngine {
     Render.stop(this.render);
     Matter.Engine.clear(this.engine);
     this.mouseEventHandler.destroy();
+    window.removeEventListener('resize', this.resizeCanvas);
   }
 }

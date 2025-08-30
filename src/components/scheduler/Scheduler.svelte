@@ -1,3 +1,4 @@
+<!-- src\components\scheduler\Scheduler.svelte -->
 <script lang="ts">
   import MatterCanvas from './MatterCanvas.svelte';
   import Controls from './Controls.svelte';
