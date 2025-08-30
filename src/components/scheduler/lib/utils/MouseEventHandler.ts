@@ -2,6 +2,7 @@
 import Matter from 'matter-js';
 import { DragHandler } from './DragHandler';
 import { SelectionHandler } from './SelectionHandler';
+import { CustomRenderer } from './CustomRenderer';
 
 export type MouseHandlers = {
   onSelectionChange?: (selectedBodies: Matter.Body[]) => void;
@@ -18,6 +19,8 @@ export class MouseEventHandler {
 
   private dragHandler: DragHandler;
   private selectionHandler: SelectionHandler;
+  private customRenderer: CustomRenderer;
+  private onSelectionChange: (selectedBodies: Matter.Body[]) => void;
   private handlers: MouseHandlers;
 
   constructor(
@@ -25,12 +28,16 @@ export class MouseEventHandler {
     boxes: Matter.Body[],
     dragHandler: DragHandler,
     selectionHandler: SelectionHandler,
+    customRenderer: CustomRenderer,
+    onSelectionChange: (selectedBodies: Matter.Body[]) => void,
     handlers: MouseHandlers
   ) {
     this.mouse = mouse;
     this.boxes = boxes;
     this.dragHandler = dragHandler;
     this.selectionHandler = selectionHandler;
+    this.customRenderer = customRenderer;
+    this.onSelectionChange = onSelectionChange;
     this.handlers = handlers;
 
     this.setupEvents();
@@ -62,6 +69,8 @@ export class MouseEventHandler {
         this.dragHandler.startDrag(this.selectedBodies, pos);
       }
     } else {
+      // オブジェクトがクリックされなかった場合は、選択を解除し、範囲選択を開始
+      this.onSelectionChange([]);
       this.selectedBodies = [];
       this.handlers.onSelectionChange?.(this.selectedBodies);
       this.isDragging = false;
@@ -77,6 +86,8 @@ export class MouseEventHandler {
     } else {
       const rect = this.selectionHandler.getSelectionBounds(this.dragStart, pos);
       const selected = this.selectionHandler.updateSelectedBodies(rect);
+      this.customRenderer.setSelectionRect(rect);
+      this.onSelectionChange(selected);
       this.handlers.onSelectionChange?.(selected);
     }
   };
@@ -84,6 +95,7 @@ export class MouseEventHandler {
   private handleMouseUp = () => {
     this.isDragging = false;
     this.dragStart = null;
+  this.customRenderer.setSelectionRect(null);
   };
 
   private handleWheel = (e: WheelEvent) => {

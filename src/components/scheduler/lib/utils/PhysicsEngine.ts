@@ -54,6 +54,8 @@ export class PhysicsEngine {
       this.boxes,
       this.dragHandler,
       this.selectionHandler,
+      this.customRenderer,
+      this.handleSelectionChange,
       handlers
     );
 
@@ -94,6 +96,16 @@ export class PhysicsEngine {
     this.mouseEventHandler.updateBoxList(this.boxes);
     this.selectionHandler.updateAllBodies(this.boxes);
     this.handleSelectionChange(this.selectedBodies);
+  }
+
+  public collapseSelected() {
+    this.groupManager.collapse(this.selectedBodies);
+    this.updateBoxColors();
+  }
+
+  public expandSelected() {
+    this.groupManager.expand(this.selectedBodies);
+    this.updateBoxColors();
   }
 
   private handleSelectionChange = (selectedBodies: Matter.Body[]) => {
