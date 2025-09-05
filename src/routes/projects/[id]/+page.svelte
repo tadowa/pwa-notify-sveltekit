@@ -15,6 +15,9 @@
   import { normalizeBusySlots, toPxBoxes, type UserBusy } from '$lib/convertBusyBoxes';
   import { schedules, setSchedules } from '../../../components/scheduler/schedulesStore';
 
+  import { resources } from '../../../components/scheduler/resourcesStore';
+  import RightSidebar from '../../../components/scheduler/RightSidebar.svelte';
+
   export let params;
   let project: any = null;
   let nodes: any[] = [];
@@ -174,11 +177,25 @@
   function goToProjects() {
     goto('/projects');
   }
+
+  let sidebarVisible = false;
+
+  function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+  }
   
   
 </script>
 
 <Scheduler />
+{#if sidebarVisible}
+  <RightSidebar />
+{/if}
+
+<button class="toggle-button" on:click={toggleSidebar}>
+  {sidebarVisible ? '閉じる' : '開く'}
+</button>
+
 
 {#if project}
   <h1 class="text-xl font-bold mb-4">{project.title}</h1>
@@ -269,4 +286,3 @@
 {:else}
   <p>空きユーザーは見つかりませんでした</p>
 {/if}
-
