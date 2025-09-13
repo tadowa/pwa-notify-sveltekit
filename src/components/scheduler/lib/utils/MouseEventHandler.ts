@@ -84,14 +84,18 @@ export class MouseEventHandler {
     }
   };
 
-  private handleMouseMove = (event: MouseEvent) => {
+  private handleMouseMove = (e: MouseEvent) => {
     if (!this.dragStart) return;
 
     const bounds = (this.mouse as any).renderBounds as Matter.Bounds;
     const worldPos = this.getWorldPosition(this.mouse.position, bounds);
-
+    // console.log(e.shiftKey)
     if (this.isDragging) {
       this.dragHandler.applyDragPosition(this.selectedBodies, worldPos);
+    } else if (e.shiftKey) {
+      const deltaX = this.dragStart.x - worldPos.x;
+      const deltaY = this.dragStart.y - worldPos.y;
+      this.handlers.onScroll?.(deltaX, deltaY);
     } else {
       const rect = this.selectionHandler.getSelectionBounds(this.dragStart, worldPos);
       const selected = this.selectionHandler.updateSelectedBodies(rect);

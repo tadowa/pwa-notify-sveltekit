@@ -16,7 +16,9 @@
   import { schedules, setSchedules } from '../../../components/scheduler/schedulesStore';
 
   import { resources } from '../../../components/scheduler/resourcesStore';
-  import RightSidebar from '../../../components/scheduler/RightSidebar.svelte';
+  import RightSidebar from '../../../components/detail/RightSidebar.svelte';
+  import WBSPanel from '../../../components/wbs/WBSPanel.svelte';
+  import SearchOverlay from '../../../components/search/SearchOverlay.svelte';
 
   export let params;
   let project: any = null;
@@ -116,7 +118,7 @@
 
 	// 通知送信
 	async function sendNotification() {
-        console.log('user id:', user?.id);
+    console.log('user id:', user?.id);
 
 		if (!newMessage.trim()) return;
 
@@ -178,23 +180,35 @@
     goto('/projects');
   }
 
-  let sidebarVisible = false;
+  let selectedTask = null;
+  let showSearch = false;
+  let selectedCandidates = [];
 
-  function toggleSidebar() {
-      sidebarVisible = !sidebarVisible;
-  }
-  
+  function handleAssign(candidates) {
+    console.log('Assigned:', candidates);
+    showSearch = false;
+  }  
   
 </script>
 
 <Scheduler />
-{#if sidebarVisible}
-  <RightSidebar />
+
+<div style="width:300px; border-right:1px solid #ccc;">
+  <WBSPanel on:taskSelect={(e) => selectedTask = e.detail} />
+</div>
+
+<RightSidebar 
+  {selectedTask} 
+  on:searchClick={() => showSearch = true} />
+
+{#if showSearch}
+  <SearchOverlay 
+    {selectedTask}
+    bind:selectedCandidates
+    on:assign={handleAssign}
+    on:close={() => showSearch = false} />
 {/if}
 
-<button class="toggle-button" on:click={toggleSidebar}>
-  {sidebarVisible ? '閉じる' : '開く'}
-</button>
 
 
 {#if project}
